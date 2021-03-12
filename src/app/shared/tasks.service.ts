@@ -2,6 +2,7 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {map} from 'rxjs/operators';
 import {Observable} from 'rxjs';
+import * as moment from 'moment';
 
 export interface Task {
   id?: string;
@@ -20,6 +21,17 @@ export class TasksService {
   constructor(private http: HttpClient) {
   }
 
+  load(date: moment.Moment): Observable<Task[]> {
+    return this.http
+      .get<any>(`${TasksService.url}/${date.format('DD-MM-YYYY')}.json`) // get<Task[]>
+      .pipe(map(tasks => {
+        if (!tasks) {
+          return [];
+        }
+        return Object.keys(tasks).map(key =>  ({...tasks[key], id: key}));
+      }));
+  }
+
   create(task: Task): Observable<Task> {
     return this.http
       .post<CreateResponse>(`${TasksService.url}/${task.date}.json`, task)
@@ -27,5 +39,10 @@ export class TasksService {
         console.log('Response: ', res);
         return {...task, id: res.name};
       }));
+  }
+
+  remove(task: Task): Observable<void> {
+    return this.http
+      .delete<void>(`${TasksService.url}/${task.date}/${task.id}.json`);
   }
 }
